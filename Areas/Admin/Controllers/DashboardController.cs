@@ -25,7 +25,8 @@ public class DashboardController : Controller
 
         var rawAppointments = await _db.Appointments
             .Include(a => a.Client)
-            .Include(a => a.Service)
+            .Include(a => a.BookedServices)
+                .ThenInclude(bs => bs.Service)
             .Include(a => a.Barber)
             .OrderByDescending(a => a.CreatedAt)
             .Take(10)
@@ -35,7 +36,7 @@ public class DashboardController : Controller
         {
             Id = a.Id,
             ClientName = a.Client.FirstName + " " + a.Client.LastName,
-            ServiceName = a.Service.Name,
+            ServiceName = string.Join(", ", a.BookedServices.Select(bs => bs.Service.Name)),
             BarberName = a.Barber.FirstName + " " + a.Barber.LastName,
             Date = a.AppointmentDate,
             TimeRange = a.StartTime.ToString("HH:mm") + " – " + a.EndTime.ToString("HH:mm"),

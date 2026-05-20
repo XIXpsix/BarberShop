@@ -77,7 +77,7 @@
                     <tr>
                         <td class="text-muted">@p.Id</td>
                         <td class="text-white">@p.Appointment.Client.FullName</td>
-                        <td class="text-muted">@p.Appointment.Service.Name</td>
+                        <td class="text-muted">@string.Join(", ", p.Appointment.BookedServices.Select(bs => bs.Service.Name))</td>
                         <td class="text-muted">@p.Appointment.Barber.FullName</td>
                         <td class="text-gold fw-bold">@p.Amount.ToString("N0") ₽</td>
                         <td class="text-muted">

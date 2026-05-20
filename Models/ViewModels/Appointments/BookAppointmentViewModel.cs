@@ -6,9 +6,10 @@ namespace Barbershop.Models.ViewModels.Appointments;
 
 public class BookAppointmentViewModel
 {
-    [Required(ErrorMessage = "Выберите услугу")]
-    [Display(Name = "Услуга")]
-    public int ServiceId { get; set; }
+    [Required(ErrorMessage = "Выберите хотя бы одну услугу")]
+    [Display(Name = "Услуги")]
+    [MinLength(1, ErrorMessage = "Выберите хотя бы одну услугу")]
+    public List<int> ServiceIds { get; set; } = [];
 
     [Required(ErrorMessage = "Выберите мастера")]
     [Display(Name = "Мастер")]
@@ -30,8 +31,4 @@ public class BookAppointmentViewModel
     public IEnumerable<SelectListItem> Services { get; set; } = [];
     public IEnumerable<SelectListItem> Barbers { get; set; } = [];
     public List<TimeOnly> AvailableSlots { get; set; } = [];
-
-    // Информация для подтверждения
-    public Service? SelectedService { get; set; }
-    public Barber? SelectedBarber { get; set; }
 }

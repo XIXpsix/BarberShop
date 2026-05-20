@@ -1,7 +1,0 @@
-﻿@using Barbershop
-@using Barbershop.Models
-@using Barbershop.Models.Domain
-@using Barbershop.Models.ViewModels.Account
-@using Barbershop.Models.ViewModels.Appointments
-@using Barbershop.Models.ViewModels.Admin
-@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers

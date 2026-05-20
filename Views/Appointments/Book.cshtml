@@ -13,15 +13,24 @@
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
 
                 <div class="bs-card p-4 mb-4">
-                    <h6 class="text-gold mb-3"><i class="bi bi-1-circle me-2"></i>Выберите услугу и мастера</h6>
+                    <h6 class="text-gold mb-3"><i class="bi bi-1-circle me-2"></i>Выберите услуги и мастера</h6>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="ServiceId" class="bs-label"></label>
-                            <select asp-for="ServiceId" asp-items="Model.Services"
-                                    class="form-select bs-form-select" id="serviceSelect">
-                                <option value="">— Выберите услугу —</option>
-                            </select>
-                            <span asp-validation-for="ServiceId" class="text-danger small"></span>
+                            <label class="bs-label">Услуги (можно выбрать несколько)</label>
+                            <div class="d-flex flex-column gap-2 mt-1" id="serviceCheckboxes">
+                                @foreach (var item in Model.Services)
+                                {
+                                    <div class="form-check bs-form-check">
+                                        <input class="form-check-input service-checkbox" type="checkbox"
+                                               name="ServiceIds" value="@item.Value" id="svc_@item.Value"
+                                               @(Model.ServiceIds.Contains(int.Parse(item.Value)) ? "checked" : "") />
+                                        <label class="form-check-label text-white" for="svc_@item.Value">
+                                            @item.Text
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                            <span asp-validation-for="ServiceIds" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="BarberId" class="bs-label"></label>
@@ -48,7 +57,7 @@
                         <div class="col-12">
                             <label class="bs-label">Доступное время</label>
                             <div id="slotsContainer" class="mt-1">
-                                <p class="text-muted small">Выберите услугу, мастера и дату для отображения слотов</p>
+                                <p class="text-muted small">Выберите услуги, мастера и дату для отображения слотов</p>
                             </div>
                             <input type="hidden" asp-for="StartTime" id="startTimeInput" />
                             <span asp-validation-for="StartTime" class="text-danger small"></span>
@@ -73,25 +82,37 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        const serviceSelect = document.getElementById('serviceSelect');
+        const serviceCheckboxes = document.querySelectorAll('.service-checkbox');
         const barberSelect = document.getElementById('barberSelect');
         const dateInput = document.getElementById('dateInput');
         const slotsContainer = document.getElementById('slotsContainer');
         const startTimeInput = document.getElementById('startTimeInput');
         const submitBtn = document.getElementById('submitBtn');
 
+        function getSelectedServiceIds() {
+            return Array.from(serviceCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+        }
+
         function loadSlots() {
-            const serviceId = serviceSelect.value;
+            const serviceIds = getSelectedServiceIds();
             const barberId = barberSelect.value;
             const date = dateInput.value;
-            if (!serviceId || !barberId || !date) {
-                slotsContainer.innerHTML = '<p class="text-muted small">Выберите услугу, мастера и дату</p>';
+
+            if (!serviceIds.length || !barberId || !date) {
+                slotsContainer.innerHTML = '<p class="text-muted small">Выберите услуги, мастера и дату</p>';
                 startTimeInput.value = '';
                 submitBtn.disabled = true;
                 return;
             }
+
             slotsContainer.innerHTML = '<div class="text-muted small"><i class="bi bi-arrow-repeat me-1"></i>Загружаем слоты...</div>';
-            fetch(`/Appointments/GetAvailableSlots?barberId=${barberId}&date=${date}&serviceId=${serviceId}`)
+
+            const params = new URLSearchParams({ barberId, date });
+            serviceIds.forEach(id => params.append('serviceIds', id));
+
+            fetch(`/Appointments/GetAvailableSlots?${params}`)
                 .then(r => r.json())
                 .then(slots => {
                     if (!slots.length) {
@@ -115,8 +136,14 @@
             submitBtn.disabled = false;
         }
 
-        serviceSelect.addEventListener('change', loadSlots);
+        serviceCheckboxes.forEach(cb => cb.addEventListener('change', () => {
+            startTimeInput.value = '';
+            submitBtn.disabled = true;
+            loadSlots();
+        }));
         barberSelect.addEventListener('change', loadSlots);
         dateInput.addEventListener('change', loadSlots);
     </script>
 }
+
+

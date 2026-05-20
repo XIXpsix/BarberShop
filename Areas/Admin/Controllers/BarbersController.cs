@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Barbershop.Areas.Admin.Controllers;
 
 [Area("Admin")]
-[Authorize(Roles = "Admin,Manager")]
+[Authorize(Roles = "Adminя,Manager")]
 public class BarbersController : Controller
 {
     private readonly ApplicationDbContext _db;

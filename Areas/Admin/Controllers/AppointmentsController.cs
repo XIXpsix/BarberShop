@@ -24,7 +24,8 @@ public class AppointmentsController : Controller
     {
         var query = _db.Appointments
             .Include(a => a.Client)
-            .Include(a => a.Service)
+            .Include(a => a.BookedServices)
+                .ThenInclude(bs => bs.Service)
             .Include(a => a.Barber)
             .Include(a => a.Payment)
             .AsQueryable();
@@ -56,7 +57,8 @@ public class AppointmentsController : Controller
     {
         var appointment = await _db.Appointments
             .Include(a => a.Client)
-            .Include(a => a.Service)
+            .Include(a => a.BookedServices)
+                .ThenInclude(bs => bs.Service)
             .Include(a => a.Barber)
             .Include(a => a.Payment)
             .Include(a => a.Review)

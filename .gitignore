@@ -1,0 +1,24 @@
+## Visual Studio / .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## NuGet
+packages/
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Secrets / Local settings
+appsettings.Development.json
+**/appsettings.*.json
+!appsettings.json
+
+## OS
+.DS_Store
+Thumbs.db

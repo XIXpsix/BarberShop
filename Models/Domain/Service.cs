@@ -15,5 +15,5 @@ public class Service
 
     public ServiceCategory Category { get; set; } = null!;
     public ICollection<BarberService> BarberServices { get; set; } = new List<BarberService>();
-    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+    public ICollection<BookedService> BookedServices { get; set; } = new List<BookedService>();
 }

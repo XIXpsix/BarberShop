@@ -39,9 +39,12 @@
                     <div class="text-white">@Model.Barber.FullName</div>
                 </div>
                 <div class="col-sm-6">
-                    <div class="text-muted small">Услуга</div>
-                    <div class="text-white">@Model.Service.Name</div>
-                    <div class="text-muted small">@Model.Service.Duration мин</div>
+                    <div class="text-muted small">Услуги</div>
+                    @foreach (var bs in Model.BookedServices)
+                    {
+                        <div class="text-white">@bs.Service.Name</div>
+                        <div class="text-muted small">@bs.DurationAtTime мин · @bs.PriceAtTime.ToString("N0") ₽ (на момент записи)</div>
+                    }
                 </div>
                 <div class="col-sm-6">
                     <div class="text-muted small">Дата и время</div>
@@ -75,7 +78,27 @@
         <!-- Оплата -->
         <div class="admin-card p-4">
             <h6 class="text-gold mb-3"><i class="bi bi-cash-coin me-2"></i>Оплата</h6>
-            @if (Model.Payment?.Status == PaymentStatus.Paid)
+            @if (Model.Payment?.Status == PaymentStatus.Refunded)
+            {
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="text-muted small">Сумма</div>
+                        <div class="text-white fw-bold">@Model.Payment.Amount.ToString("N0") ₽</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Статус</div>
+                        <span class="badge badge-cancelled rounded-pill px-2">Возврат</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Payment.Notes))
+                    {
+                        <div class="col-12">
+                            <div class="text-muted small">Примечание</div>
+                            <div class="text-warning small">@Model.Payment.Notes</div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (Model.Payment?.Status == PaymentStatus.Paid)
             {
                 <div class="row g-2 mb-3">
                     <div class="col-6">

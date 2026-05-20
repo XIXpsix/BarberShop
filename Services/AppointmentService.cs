@@ -13,10 +13,17 @@ public class AppointmentService : IAppointmentService
         _db = db;
     }
 
-    public async Task<List<TimeOnly>> GetAvailableSlotsAsync(int barberId, DateOnly date, int serviceId)
+    public async Task<List<TimeOnly>> GetAvailableSlotsAsync(int barberId, DateOnly date, List<int> serviceIds)
     {
-        var service = await _db.Services.FindAsync(serviceId);
-        if (service == null) return [];
+        if (serviceIds.Count == 0) return [];
+
+        var services = await _db.Services
+            .Where(s => serviceIds.Contains(s.Id))
+            .ToListAsync();
+
+        if (services.Count != serviceIds.Count) return [];
+
+        var totalDuration = services.Sum(s => s.Duration);
 
         // Проверяем переопределение расписания на конкретную дату
         var schedule = await _db.Schedules
@@ -34,7 +41,6 @@ public class AppointmentService : IAppointmentService
         }
         else
         {
-            // Берём стандартный рабочий день по шаблону
             var workDay = await _db.WorkDays
                 .FirstOrDefaultAsync(w => w.BarberId == barberId && w.DayOfWeek == date.DayOfWeek);
 
@@ -54,11 +60,11 @@ public class AppointmentService : IAppointmentService
 
         var slots = new List<TimeOnly>();
         var current = workStart;
-        var serviceDuration = TimeSpan.FromMinutes(service.Duration);
+        var serviceDurationSpan = TimeSpan.FromMinutes(totalDuration);
 
-        while (current.Add(serviceDuration) <= workEnd)
+        while (current.Add(serviceDurationSpan) <= workEnd)
         {
-            var slotEnd = current.Add(serviceDuration);
+            var slotEnd = current.Add(serviceDurationSpan);
             var isOccupied = existingAppointments.Any(a =>
                 current < a.EndTime && slotEnd > a.StartTime);
 
@@ -86,12 +92,21 @@ public class AppointmentService : IAppointmentService
         return !await query.AnyAsync();
     }
 
-    public async Task<Appointment> CreateAppointmentAsync(string clientId, int barberId, int serviceId, DateOnly date, TimeOnly startTime, string? notes)
+    public async Task<Appointment> CreateAppointmentAsync(string clientId, int barberId, List<int> serviceIds, DateOnly date, TimeOnly startTime, string? notes)
     {
-        var service = await _db.Services.FindAsync(serviceId)
-            ?? throw new InvalidOperationException("Услуга не найдена");
+        if (serviceIds.Count == 0)
+            throw new InvalidOperationException("Выберите хотя бы одну услугу");
 
-        var endTime = startTime.Add(TimeSpan.FromMinutes(service.Duration));
+        var services = await _db.Services
+            .Where(s => serviceIds.Contains(s.Id) && s.IsActive)
+            .ToListAsync();
+
+        if (services.Count != serviceIds.Count)
+            throw new InvalidOperationException("Одна или несколько услуг не найдены");
+
+        var totalDuration = services.Sum(s => s.Duration);
+        var totalPrice = services.Sum(s => s.Price);
+        var endTime = startTime.Add(TimeSpan.FromMinutes(totalDuration));
 
         if (!await IsSlotAvailableAsync(barberId, date, startTime, endTime))
             throw new InvalidOperationException("Выбранное время уже занято");
@@ -100,16 +115,25 @@ public class AppointmentService : IAppointmentService
         {
             ClientId = clientId,
             BarberId = barberId,
-            ServiceId = serviceId,
             AppointmentDate = date,
             StartTime = startTime,
             EndTime = endTime,
-            TotalPrice = service.Price,
+            TotalPrice = totalPrice,
             Notes = notes,
             Status = AppointmentStatus.Pending,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+
+        foreach (var service in services)
+        {
+            appointment.BookedServices.Add(new BookedService
+            {
+                ServiceId = service.Id,
+                PriceAtTime = service.Price,
+                DurationAtTime = service.Duration
+            });
+        }
 
         _db.Appointments.Add(appointment);
         await _db.SaveChangesAsync();
@@ -118,7 +142,10 @@ public class AppointmentService : IAppointmentService
 
     public async Task<bool> CancelAppointmentAsync(int appointmentId, string userId, bool isAdmin, string? reason)
     {
-        var appointment = await _db.Appointments.FindAsync(appointmentId);
+        var appointment = await _db.Appointments
+            .Include(a => a.Payment)
+            .FirstOrDefaultAsync(a => a.Id == appointmentId);
+
         if (appointment == null) return false;
 
         if (!isAdmin && appointment.ClientId != userId) return false;
@@ -130,6 +157,15 @@ public class AppointmentService : IAppointmentService
         appointment.CancelledAt = DateTime.UtcNow;
         appointment.CancelReason = reason;
         appointment.UpdatedAt = DateTime.UtcNow;
+
+        // Если оплата уже была зафиксирована — автоматически ставим возврат
+        if (appointment.Payment?.Status == PaymentStatus.Paid)
+        {
+            appointment.Payment.Status = PaymentStatus.Refunded;
+            appointment.Payment.Notes = string.IsNullOrWhiteSpace(reason)
+                ? "Автовозврат при отмене записи"
+                : $"Автовозврат при отмене записи: {reason}";
+        }
 
         await _db.SaveChangesAsync();
         return true;
@@ -157,3 +193,4 @@ public class AppointmentService : IAppointmentService
         return true;
     }
 }
+

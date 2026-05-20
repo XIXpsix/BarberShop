@@ -5,7 +5,6 @@ public class Appointment
     public int Id { get; set; }
     public string ClientId { get; set; } = string.Empty;
     public int BarberId { get; set; }
-    public int ServiceId { get; set; }
     public DateOnly AppointmentDate { get; set; }
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
@@ -19,7 +18,7 @@ public class Appointment
 
     public ApplicationUser Client { get; set; } = null!;
     public Barber Barber { get; set; } = null!;
-    public Service Service { get; set; } = null!;
+    public ICollection<BookedService> BookedServices { get; set; } = new List<BookedService>();
     public Payment? Payment { get; set; }
     public Review? Review { get; set; }
 }

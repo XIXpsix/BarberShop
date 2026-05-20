@@ -155,7 +155,8 @@ public class AccountController : Controller
 
         var appointments = await _db.Appointments
             .Where(a => a.ClientId == user.Id)
-            .Include(a => a.Service)
+            .Include(a => a.BookedServices)
+                .ThenInclude(bs => bs.Service)
             .Include(a => a.Barber)
             .Include(a => a.Payment)
             .OrderByDescending(a => a.AppointmentDate)
@@ -163,7 +164,7 @@ public class AccountController : Controller
             .Select(a => new AppointmentListItemViewModel
             {
                 Id = a.Id,
-                ServiceName = a.Service.Name,
+                ServiceNames = a.BookedServices.Select(bs => bs.Service.Name).ToList(),
                 BarberName = a.Barber.FirstName + " " + a.Barber.LastName,
                 AppointmentDate = a.AppointmentDate,
                 StartTime = a.StartTime,

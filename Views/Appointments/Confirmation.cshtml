@@ -13,8 +13,13 @@
             <div class="bs-card p-4 text-start mb-4">
                 <div class="row g-3">
                     <div class="col-6">
-                        <div class="text-muted small">Услуга</div>
-                        <div class="text-white">@Model.Service.Name</div>
+                        <div class="text-muted small">Услуги</div>
+                        <div class="text-white">
+                            @foreach (var bs in Model.BookedServices)
+                            {
+                                <div>@bs.Service.Name <span class="text-muted small">(@bs.PriceAtTime.ToString("N0") ₽)</span></div>
+                            }
+                        </div>
                     </div>
                     <div class="col-6">
                         <div class="text-muted small">Мастер</div>

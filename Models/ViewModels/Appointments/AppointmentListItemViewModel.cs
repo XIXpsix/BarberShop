@@ -5,7 +5,7 @@ namespace Barbershop.Models.ViewModels.Appointments;
 public class AppointmentListItemViewModel
 {
     public int Id { get; set; }
-    public string ServiceName { get; set; } = string.Empty;
+    public List<string> ServiceNames { get; set; } = [];
     public string BarberName { get; set; } = string.Empty;
     public DateOnly AppointmentDate { get; set; }
     public TimeOnly StartTime { get; set; }

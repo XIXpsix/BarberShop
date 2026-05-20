@@ -21,11 +21,12 @@ public class PaymentsController : Controller
     {
         var query = _db.Payments
             .Include(p => p.Appointment)
-            .ThenInclude(a => a.Client)
+                .ThenInclude(a => a.Client)
             .Include(p => p.Appointment)
-            .ThenInclude(a => a.Service)
+                .ThenInclude(a => a.BookedServices)
+                    .ThenInclude(bs => bs.Service)
             .Include(p => p.Appointment)
-            .ThenInclude(a => a.Barber)
+                .ThenInclude(a => a.Barber)
             .AsQueryable();
 
         if (Enum.TryParse<PaymentStatus>(status, out var parsedStatus))

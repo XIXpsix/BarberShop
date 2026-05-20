@@ -42,7 +42,7 @@ public class AppointmentsController : Controller
 
         var model = new BookAppointmentViewModel
         {
-            ServiceId = serviceId ?? 0,
+            ServiceIds = serviceId.HasValue ? [serviceId.Value] : [],
             BarberId = barberId ?? 0,
             Services = services.Select(s => new SelectListItem
             {
@@ -75,7 +75,7 @@ public class AppointmentsController : Controller
         try
         {
             var appointment = await _appointmentService.CreateAppointmentAsync(
-                user.Id, model.BarberId, model.ServiceId,
+                user.Id, model.BarberId, model.ServiceIds,
                 model.AppointmentDate, model.StartTime, model.Notes);
 
             TempData["Success"] = "Запись успешно создана! Ожидайте подтверждения.";
@@ -94,7 +94,8 @@ public class AppointmentsController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
         var appointment = await _db.Appointments
-            .Include(a => a.Service)
+            .Include(a => a.BookedServices)
+                .ThenInclude(bs => bs.Service)
             .Include(a => a.Barber)
             .FirstOrDefaultAsync(a => a.Id == id && a.ClientId == user!.Id);
 
@@ -119,12 +120,12 @@ public class AppointmentsController : Controller
 
     // AJAX: получить свободные слоты
     [HttpGet]
-    public async Task<IActionResult> GetAvailableSlots(int barberId, string date, int serviceId)
+    public async Task<IActionResult> GetAvailableSlots(int barberId, string date, [FromQuery] List<int> serviceIds)
     {
         if (!DateOnly.TryParse(date, out var parsedDate))
             return BadRequest();
 
-        var slots = await _appointmentService.GetAvailableSlotsAsync(barberId, parsedDate, serviceId);
+        var slots = await _appointmentService.GetAvailableSlotsAsync(barberId, parsedDate, serviceIds);
         return Json(slots.Select(s => s.ToString("HH:mm")));
     }
 

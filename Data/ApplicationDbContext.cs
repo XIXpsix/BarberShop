@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<WorkDay> WorkDays { get; set; }
     public DbSet<Schedule> Schedules { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
+    public DbSet<BookedService> BookedServices { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<Review> Reviews { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
@@ -24,14 +25,34 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
-        // Переименовываем таблицы Identity
-        builder.Entity<ApplicationUser>().ToTable("Users");
-        builder.Entity<Microsoft.AspNetCore.Identity.IdentityRole>().ToTable("Roles");
-        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserRole<string>>().ToTable("UserRoles");
-        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserClaim<string>>().ToTable("UserClaims");
-        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserLogin<string>>().ToTable("UserLogins");
-        builder.Entity<Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>>().ToTable("RoleClaims");
-        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<string>>().ToTable("UserTokens");
+        // ── Схема: identity ──────────────────────────────────────────────────
+        builder.Entity<ApplicationUser>().ToTable("Users", "identity");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityRole>().ToTable("Roles", "identity");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserRole<string>>().ToTable("UserRoles", "identity");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserClaim<string>>().ToTable("UserClaims", "identity");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserLogin<string>>().ToTable("UserLogins", "identity");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>>().ToTable("RoleClaims", "identity");
+        builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<string>>().ToTable("UserTokens", "identity");
+
+        // ── Схема: services ──────────────────────────────────────────────────
+        builder.Entity<ServiceCategory>().ToTable("ServiceCategories", "services");
+        builder.Entity<Service>().ToTable("Services", "services");
+        builder.Entity<BarberService>().ToTable("BarberServices", "services");
+
+        // ── Схема: appointments ──────────────────────────────────────────────
+        builder.Entity<Appointment>().ToTable("Appointments", "appointments");
+        builder.Entity<BookedService>().ToTable("BookedServices", "appointments");
+        builder.Entity<Payment>().ToTable("Payments", "appointments");
+        builder.Entity<Review>().ToTable("Reviews", "appointments");
+
+        // ── Схема: staff ─────────────────────────────────────────────────────
+        builder.Entity<Barber>().ToTable("Barbers", "staff");
+        builder.Entity<WorkDay>().ToTable("WorkDays", "staff");
+        builder.Entity<Schedule>().ToTable("Schedules", "staff");
+
+        // ── Схема: audit ─────────────────────────────────────────────────────
+        builder.Entity<AuditLog>().ToTable("AuditLogs", "audit");
+        builder.Entity<Notification>().ToTable("Notifications", "audit");
 
         // BarberService: составной PK (Many-to-Many)
         builder.Entity<BarberService>()
@@ -46,6 +67,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(bs => bs.Service)
             .WithMany(s => s.BarberServices)
             .HasForeignKey(bs => bs.ServiceId);
+
+        // BookedService: составной PK (Many-to-Many с данными)
+        builder.Entity<BookedService>()
+            .HasKey(bs => new { bs.AppointmentId, bs.ServiceId });
+
+        builder.Entity<BookedService>()
+            .HasOne(bs => bs.Appointment)
+            .WithMany(a => a.BookedServices)
+            .HasForeignKey(bs => bs.AppointmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<BookedService>()
+            .HasOne(bs => bs.Service)
+            .WithMany(s => s.BookedServices)
+            .HasForeignKey(bs => bs.ServiceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<BookedService>()
+            .Property(bs => bs.PriceAtTime)
+            .HasPrecision(10, 2);
 
         // Appointment -> Client (нельзя каскадно удалить пользователя с записями)
         builder.Entity<Appointment>()

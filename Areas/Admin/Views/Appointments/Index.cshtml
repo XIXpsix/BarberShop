@@ -81,7 +81,9 @@
                             <div class="text-white">@a.Client.FullName</div>
                             <div class="text-muted" style="font-size:.75rem">@a.Client.PhoneNumber</div>
                         </td>
-                        <td class="text-muted">@a.Service.Name</td>
+                        <td class="text-muted">
+                            @string.Join(", ", a.BookedServices.Select(bs => bs.Service.Name))
+                        </td>
                         <td class="text-muted">@a.Barber.FullName</td>
                         <td class="text-muted">@a.AppointmentDate.ToString("dd.MM.yyyy")</td>
                         <td class="text-muted" style="white-space:nowrap">
